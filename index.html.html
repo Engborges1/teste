@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulado Transpetro — Engenharia Mecânica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-900:#0A2540;
+    --navy-700:#123A5C;
+    --navy-500:#1E5484;
+    --steel-600:#57697C;
+    --steel-300:#D3DCE3;
+    --steel-100:#EEF2F5;
+    --bg:#F4F6F8;
+    --amber:#E8963C;
+    --amber-dark:#C77A22;
+    --green-ok:#2F7D5C;
+    --green-bg:#E4F3EC;
+    --red-err:#C1442D;
+    --red-bg:#FBEAE6;
+    --ink:#13202E;
+    --ink-soft:#4B5A68;
+    --card:#FFFFFF;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.num,.timer,.brand{
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    background:var(--navy-900);
+    color:#fff;
+    padding:14px 20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    flex-wrap:wrap;
+    border-bottom:3px solid var(--amber);
+  }
+  .brand{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .brand .mark{
+    font-weight:700;
+    font-size:1.05rem;
+    letter-spacing:0.3px;
+  }
+  .brand .sub{
+    color:#B9CBDC;
+    font-size:0.85rem;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .top-status{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    flex-wrap:wrap;
+  }
+  .progress-pill{
+    font-size:0.85rem;
+    color:#CFE0EF;
+  }
+  .progress-pill b{color:#fff;}
+  .timer{
+    font-size:1.15rem;
+    font-weight:600;
+    background:rgba(255,255,255,0.08);
+    padding:6px 14px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.18);
+    min-width:112px;
+    text-align:center;
+  }
+  .timer.warn{
+    background:rgba(232,150,60,0.18);
+    border-color:var(--amber);
+    color:var(--amber);
+  }
+  .timer.crit{
+    background:rgba(193,68,45,0.2);
+    border-color:var(--red-err);
+    color:#ff9d84;
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .app{
+    display:grid;
+    grid-template-columns: 300px 1fr;
+    gap:22px;
+    max-width:1200px;
+    margin:22px auto;
+    padding:0 20px 60px;
+  }
+  @media (max-width:880px){
+    .app{grid-template-columns:1fr;}
+    .rail{order:2;}
+    .main{order:1;}
+  }
+
+  /* ---------- RAIL / NAVIGATOR ---------- */
+  .rail{
+    align-self:start;
+    position:sticky;
+    top:16px;
+  }
+  .rail-card{
+    background:var(--card);
+    border:1px solid var(--steel-300);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .rail-card h3{
+    margin:0 0 10px;
+    font-size:0.85rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--steel-600);
+    font-weight:600;
+  }
+  .legend{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    font-size:0.78rem;
+    color:var(--ink-soft);
+    margin-bottom:12px;
+  }
+  .legend span.dot{
+    display:inline-block;
+    width:9px;height:9px;
+    border-radius:2px;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+  .grid-nav{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:6px;
+  }
+  .qbtn{
+    aspect-ratio:1;
+    border:1.5px solid var(--steel-300);
+    background:#fff;
+    border-radius:6px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.72rem;
+    color:var(--ink-soft);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .08s ease;
+  }
+  .qbtn:hover{transform:translateY(-1px);}
+  .qbtn.answered{
+    background:var(--navy-700);
+    border-color:var(--navy-700);
+    color:#fff;
+  }
+  .qbtn.current{
+    outline:2px solid var(--amber);
+    outline-offset:1px;
+  }
+  .qbtn:focus-visible{
+    outline:2px solid var(--navy-500);
+    outline-offset:2px;
+  }
+  .section-divider{
+    grid-column:1/-1;
+    height:1px;
+    background:var(--steel-300);
+    margin:2px 0;
+  }
+
+  .submit-btn{
+    width:100%;
+    background:var(--amber);
+    color:#3A2205;
+    border:none;
+    padding:12px 14px;
+    border-radius:8px;
+    font-weight:600;
+    font-size:0.95rem;
+    cursor:pointer;
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .submit-btn:hover{background:var(--amber-dark); color:#fff;}
+  .submit-btn:disabled{
+    background:var(--steel-300);
+    color:var(--steel-600);
+    cursor:not-allowed;
+  }
+  .hint{
+    font-size:0.76rem;
+    color:var(--steel-600);
+    margin-top:8px;
+    line-height:1.4;
+  }
+
+  /* ---------- MAIN QUESTION AREA ---------- */
+  .main{min-width:0;}
+  .qcard{
+    background:var(--card);
+    border:1px solid var(--steel-300);
+    border-radius:var(--radius);
+    padding:28px 30px;
+    min-height:420px;
+    display:flex;
+    flex-direction:column;
+  }
+  .qhead{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .subject-tag{
+    display:inline-block;
+    font-size:0.72rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    padding:4px 10px;
+    border-radius:20px;
+  }
+  .tag-port{background:#EAF1FB;color:var(--navy-700);}
+  .tag-ing{background:#F1EAFB;color:#5B3A9C;}
+  .tag-esp{background:var(--green-bg);color:var(--green-ok);}
+
+  .qnum{
+    font-size:1.5rem;
+    font-weight:700;
+    color:var(--navy-900);
+  }
+  .qtext{
+    font-size:1.02rem;
+    line-height:1.65;
+    color:var(--ink);
+    margin-bottom:22px;
+    white-space:pre-line;
+  }
+  .qtext .datainfo{
+    display:block;
+    margin-top:10px;
+    font-size:0.9rem;
+    color:var(--ink-soft);
+    font-style:italic;
+  }
+  .options{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:auto;
+  }
+  .opt{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    border:1.5px solid var(--steel-300);
+    border-radius:8px;
+    padding:12px 14px;
+    cursor:pointer;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .opt:hover{border-color:var(--navy-500); background:var(--steel-100);}
+  .opt.selected{
+    border-color:var(--navy-700);
+    background:#EAF1FB;
+  }
+  .opt .letter{
+    flex:0 0 auto;
+    width:26px;height:26px;
+    border-radius:50%;
+    border:1.5px solid var(--steel-600);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.82rem;
+    color:var(--ink-soft);
+  }
+  .opt.selected .letter{
+    background:var(--navy-700);
+    border-color:var(--navy-700);
+    color:#fff;
+  }
+  .opt .opttext{font-size:0.96rem; line-height:1.5; padding-top:2px;}
+
+  .navbtns{
+    display:flex;
+    justify-content:space-between;
+    margin-top:22px;
+  }
+  .navbtn{
+    background:#fff;
+    border:1.5px solid var(--steel-300);
+    color:var(--navy-900);
+    padding:10px 18px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Space Grotesk', sans-serif;
+  }
+  .navbtn:hover{border-color:var(--navy-700);}
+  .navbtn:disabled{opacity:0.4; cursor:not-allowed;}
+  .navbtn.primary{
+    background:var(--navy-900);
+    color:#fff;
+    border-color:var(--navy-900);
+  }
+  .navbtn.primary:hover{background:var(--navy-700);}
+
+  /* ---------- RESULTS ---------- */
+  .results{
+    background:var(--card);
+    border:1px solid var(--steel-300);
+    border-radius:var(--radius);
+    padding:30px 32px;
+  }
+  .score-hero{
+    display:flex;
+    align-items:center;
+    gap:26px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--steel-300);
+    padding-bottom:24px;
+    margin-bottom:24px;
+  }
+  .score-num{
+    font-size:3.4rem;
+    font-weight:700;
+    color:var(--navy-900);
+    line-height:1;
+  }
+  .score-den{
+    font-size:1.2rem;
+    color:var(--steel-600);
+  }
+  .score-desc h2{margin:0 0 4px; font-size:1.15rem;}
+  .score-desc p{margin:0; color:var(--ink-soft); font-size:0.92rem;}
+
+  .breakdown{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+    margin-bottom:26px;
+  }
+  @media (max-width:640px){.breakdown{grid-template-columns:1fr;}}
+  .bd-card{
+    border:1px solid var(--steel-300);
+    border-radius:8px;
+    padding:14px 16px;
+  }
+  .bd-card .bd-title{font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--steel-600); margin-bottom:6px;}
+  .bd-card .bd-val{font-size:1.4rem; font-weight:700; color:var(--navy-900); font-family:'Space Grotesk';}
+  .bd-bar{height:6px; background:var(--steel-100); border-radius:4px; margin-top:8px; overflow:hidden;}
+  .bd-bar > div{height:100%; background:var(--navy-700);}
+
+  .review-list{display:flex; flex-direction:column; gap:8px;}
+  .review-item{
+    border:1px solid var(--steel-300);
+    border-radius:8px;
+    padding:12px 14px;
+    cursor:pointer;
+  }
+  .review-item .row1{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:0.88rem;
+  }
+  .review-item .row1 .idx{font-family:'IBM Plex Mono'; color:var(--steel-600); width:28px;}
+  .review-item .row1 .status{
+    margin-left:auto;
+    font-weight:600;
+    font-size:0.78rem;
+    padding:2px 9px;
+    border-radius:20px;
+  }
+  .status.ok{background:var(--green-bg); color:var(--green-ok);}
+  .status.bad{background:var(--red-bg); color:var(--red-err);}
+  .status.blank{background:var(--steel-100); color:var(--steel-600);}
+  .review-detail{
+    display:none;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--steel-300);
+    font-size:0.9rem;
+    color:var(--ink-soft);
+    line-height:1.55;
+  }
+  .review-item.open .review-detail{display:block;}
+  .review-detail b{color:var(--ink);}
+  .restart-btn{
+    margin-top:26px;
+    background:var(--navy-900);
+    color:#fff;
+    border:none;
+    padding:12px 20px;
+    border-radius:8px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Space Grotesk';
+  }
+  .restart-btn:hover{background:var(--navy-700);}
+
+  .footnote{
+    max-width:1200px;
+    margin:0 auto 40px;
+    padding:0 20px;
+    font-size:0.78rem;
+    color:var(--steel-600);
+    line-height:1.6;
+  }
+
+  /* modal */
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(10,37,64,0.55);
+    display:none; align-items:center; justify-content:center; z-index:50;
+    padding:20px;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:#fff; border-radius:12px; padding:26px 28px; max-width:420px;
+  }
+  .modal h3{margin:0 0 10px;}
+  .modal p{margin:0 0 20px; color:var(--ink-soft); font-size:0.94rem; line-height:1.5;}
+  .modal .mbtns{display:flex; gap:10px; justify-content:flex-end;}
+  .modal .mbtn{
+    padding:9px 16px; border-radius:7px; border:1.5px solid var(--steel-300);
+    background:#fff; cursor:pointer; font-weight:600; font-family:'Space Grotesk';
+  }
+  .modal .mbtn.primary{background:var(--navy-900); color:#fff; border-color:var(--navy-900);}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="mark">SIMULADO TRANSPETRO</span>
+    <span class="sub">Engenharia Mecânica · nível superior · modelo Cesgranrio</span>
+  </div>
+  <div class="top-status">
+    <div class="progress-pill" id="progressPill"><b>0</b>/70 respondidas</div>
+    <div class="timer" id="timer">04:30:00</div>
+  </div>
+</div>
+
+<div class="app" id="appRoot">
+
+  <div class="rail" id="railView">
+    <div class="rail-card">
+      <h3>Navegador de questões</h3>
+      <div class="legend">
+        <div><span class="dot" style="background:#EAF1FB;border:1px solid var(--navy-700)"></span>Língua Portuguesa (1–10)</div>
+        <div><span class="dot" style="background:#F1EAFB;border:1px solid #5B3A9C"></span>Língua Inglesa (11–20)</div>
+        <div><span class="dot" style="background:var(--green-bg);border:1px solid var(--green-ok)"></span>Conhecimentos Específicos (21–70)</div>
+      </div>
+      <div class="grid-nav" id="gridNav"></div>
+    </div>
+    <div class="rail-card">
+      <button class="submit-btn" id="submitBtn">Finalizar simulado</button>
+      <div class="hint">A prova real da Cesgranrio concede 4h30 para as 70 questões. Você pode navegar livremente entre elas antes de finalizar — a correção só é exibida ao final.</div>
+    </div>
+  </div>
+
+  <div class="main" id="mainView">
+    <div class="qcard">
+      <div class="qhead">
+        <span class="subject-tag" id="subjectTag"></span>
+        <span class="qnum" id="qnumLabel"></span>
+      </div>
+      <div class="qtext" id="qtext"></div>
+      <div class="options" id="options"></div>
+      <div class="navbtns">
+        <button class="navbtn" id="prevBtn">← Anterior</button>
+        <button class="navbtn primary" id="nextBtn">Próxima →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main" id="resultsView" style="display:none; grid-column:1/-1;">
+    <div class="results">
+      <div class="score-hero">
+        <div>
+          <span class="score-num" id="scoreNum">0</span><span class="score-den" id="scoreDen">/70</span>
+        </div>
+        <div class="score-desc">
+          <h2 id="scoreTitle">Resultado do simulado</h2>
+          <p id="scoreSub">Confira abaixo seu desempenho por bloco e a revisão questão a questão.</p>
+        </div>
+      </div>
+
+      <div class="breakdown" id="breakdownArea"></div>
+
+      <h3 style="font-family:'Space Grotesk'; font-size:1rem; margin-bottom:12px;">Revisão questão a questão</h3>
+      <div class="review-list" id="reviewList"></div>
+
+      <button class="restart-btn" id="restartBtn">Refazer simulado</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="footnote">
+  As 50 questões de Conhecimentos Específicos (21–70) reproduzem, na íntegra e com gabarito oficial, a prova
+  aplicada pela Fundação Cesgranrio no concurso Transpetro (Edital nº 2 — PSP/Terra/Nível Superior – 2023.2,
+  Ênfase 24: Engenharia Mecânica). As 20 questões de Português e Inglês (1–20) são exercícios originais, escritos
+  no mesmo estilo e nível da banca, para completar a estrutura de 70 questões da prova real — os textos oficiais
+  de Português/Inglês da Cesgranrio não são reproduzidos por serem de terceiros.
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Finalizar simulado?</h3>
+    <p id="modalText">Você ainda não respondeu todas as questões. Deseja finalizar mesmo assim? As questões em branco contarão como erradas.</p>
+    <div class="mbtns">
+      <button class="mbtn" id="modalCancel">Continuar simulado</button>
+      <button class="mbtn primary" id="modalConfirm">Finalizar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   BANCO DE QUESTÕES
+   1-10  Português (originais, estilo Cesgranrio)
+   11-20 Inglês (originais, estilo Cesgranrio)
+   21-70 Conhecimentos Específicos — Eng. Mecânica
+          (prova oficial Cesgranrio, Transpetro 2023.2, Ênfase 24)
+========================================================= */
+
+const TEXTO_PT = `Ao longo de mais de onze mil quilômetros de dutos espalhados pelo território brasileiro, engenheiros monitoram, todos os dias, a pressão, a temperatura e a integridade estrutural de tubulações que nunca param de trabalhar. Não é incomum que, em uma sala de controle silenciosa, um único painel de sensores substitua o que antes exigia dezenas de rondas de inspeção a pé. A tecnologia avançou, mas o desafio permanece o mesmo de décadas atrás: garantir que o transporte de óleo e derivados aconteça sem falhas, em qualquer clima e a qualquer hora.
+Essa vigilância constante tem um preço invisível para o público, mas bem conhecido pelos profissionais da área: a formação técnica sólida. Não basta operar equipamentos; é preciso compreendê-los. Um engenheiro que entende os princípios por trás de uma bomba centrífuga, de uma turbina ou de uma solda estrutural enxerga, antes de qualquer alarme soar, os sinais sutis de que algo pode dar errado. Por isso, companhias como a Transpetro valorizam tanto, em seus processos seletivos, o domínio consistente dos fundamentos da engenharia — não apenas a familiaridade com jargões do setor.`;
+
+const TEXTO_EN = `Predictive maintenance has changed the way engineers look at rotating equipment such as pumps, compressors and turbines. Instead of waiting for a machine to fail, sensors continuously collect vibration, temperature and pressure data, which is then compared against historical patterns. When a reading drifts away from what is expected, the system flags it long before a breakdown could stop an entire pipeline segment.
+This approach does not eliminate the need for skilled engineers; rather, it changes their role. Engineers must now interpret trends, judge whether an anomaly is meaningful, and decide when a shutdown is truly necessary. Companies that operate large logistics networks, therefore, look for professionals who combine strong theoretical knowledge with the ability to read real operating data critically.`;
+
+const questions = [
+// ---------------- PORTUGUÊS 1-10 ----------------
+{id:1, subject:"port", text:`Leia o texto abaixo para responder à questão.\n\n${TEXTO_PT}\n\nO texto tem como ideia central`,
+ options:[
+  {l:"A", t:"defender a substituição total dos engenheiros por sensores automáticos."},
+  {l:"B", t:"mostrar que a tecnologia de monitoramento tornou dispensável a formação técnica dos engenheiros."},
+  {l:"C", t:"relacionar o avanço da tecnologia de monitoramento à importância da formação técnica sólida dos engenheiros."},
+  {l:"D", t:"criticar as empresas que ainda utilizam rondas de inspeção a pé em suas instalações."},
+  {l:"E", t:"descrever detalhadamente o funcionamento de uma bomba centrífuga."},
+ ], correct:"C"},
+
+{id:2, subject:"port", text:`Considerando o texto anterior, a palavra "vigilância" (2º parágrafo) pode ser substituída, sem alteração de sentido, por`,
+ options:[
+  {l:"A","t":"indiferença."},
+  {l:"B","t":"fiscalização."},
+  {l:"C","t":"tolerância."},
+  {l:"D","t":"discrição."},
+  {l:"E","t":"lentidão."},
+ ], correct:"B"},
+
+{id:3, subject:"port", text:`No trecho "Não é incomum que [...] um único painel de sensores substitua o que antes exigia dezenas de rondas de inspeção a pé" (1º parágrafo), a expressão em destaque estabelece uma relação de`,
+ options:[
+  {l:"A","t":"causa."},
+  {l:"B","t":"comparação temporal."},
+  {l:"C","t":"condição."},
+  {l:"D","t":"finalidade."},
+  {l:"E","t":"concessão."},
+ ], correct:"B"},
+
+{id:4, subject:"port", text:`No trecho "Um engenheiro que entende os princípios por trás de uma bomba centrífuga [...] enxerga, antes de qualquer alarme soar, os sinais sutis de que algo pode dar errado" (2º parágrafo), o pronome relativo "que" retoma`,
+ options:[
+  {l:"A","t":"princípios."},
+  {l:"B","t":"bomba centrífuga."},
+  {l:"C","t":"engenheiro."},
+  {l:"D","t":"alarme."},
+  {l:"E","t":"sinais."},
+ ], correct:"C"},
+
+{id:5, subject:"port", text:`Assinale a alternativa em que a concordância verbal está em conformidade com a norma-padrão da língua portuguesa.`,
+ options:[
+  {l:"A","t":"Fazem dez anos que a companhia investe em sensores de monitoramento."},
+  {l:"B","t":"Existe, no setor de óleo e gás, diversas oportunidades para engenheiros mecânicos."},
+  {l:"C","t":"Aluga-se salas de controle equipadas com painéis de última geração."},
+  {l:"D","t":"Haviam, naquele turno, apenas dois técnicos disponíveis para a inspeção."},
+  {l:"E","t":"Fazem parte da rotina do engenheiro a leitura constante de dados de pressão e temperatura."},
+ ], correct:"E"},
+
+{id:6, subject:"port", text:`Assinale a alternativa em que a regência verbal está de acordo com a norma-padrão.`,
+ options:[
+  {l:"A","t":"O supervisor assistiu o relatório de falhas antes de autorizar a manutenção."},
+  {l:"B","t":"A equipe obedeceu ao protocolo de segurança durante toda a inspeção."},
+  {l:"C","t":"O engenheiro aspirava chegar rapidamente ao cargo de coordenador."},
+  {l:"D","t":"Os técnicos preferem trabalhar em turnos noturnos do que diurnos."},
+  {l:"E","t":"O relatório implica que os sensores sejam substituídos imediatamente."},
+ ], correct:"B"},
+
+{id:7, subject:"port", text:`Assinale a alternativa em que o emprego do acento indicativo de crase está correto.`,
+ options:[
+  {l:"A","t":"O técnico entregou o laudo à diretoria da empresa."},
+  {l:"B","t":"A vistoria foi realizada à distância de poucos metros do duto."},
+  {l:"C","t":"Chegamos à uma conclusão precisa sobre a causa da falha."},
+  {l:"D","t":"A reunião ficou marcada à partir das nove horas."},
+  {l:"E","t":"Ele se referiu à ela como a melhor engenheira da equipe."},
+ ], correct:"A"},
+
+{id:8, subject:"port", text:`Assinale a alternativa em que o emprego da vírgula está correto, considerando a norma-padrão da língua portuguesa.`,
+ options:[
+  {l:"A","t":"Os engenheiros, que trabalham no turno da noite terminaram a inspeção cedo."},
+  {l:"B","t":"A companhia, sediada no Rio de Janeiro, opera uma extensa malha de dutos."},
+  {l:"C","t":"Depois da inspeção os técnicos, retornaram imediatamente à sala de controle."},
+  {l:"D","t":"O relatório final, foi entregue ao supervisor na manhã seguinte."},
+  {l:"E","t":"Os sensores modernos, permitem uma leitura mais precisa dos dados."},
+ ], correct:"B"},
+
+{id:9, subject:"port", text:`Assinale a alternativa em que todas as palavras estão grafadas corretamente, de acordo com a norma-padrão.`,
+ options:[
+  {l:"A","t":"manutenção, priorizar, discrepância"},
+  {l:"B","t":"manuteção, prioridade, discrepância"},
+  {l:"C","t":"manutenção, prioridade, descrepância"},
+  {l:"D","t":"manutensão, priorizar, discrepância"},
+  {l:"E","t":"manutenção, prioridade, discrepânsia"},
+ ], correct:"A"},
+
+{id:10, subject:"port", text:`No período "A tecnologia avançou, mas o desafio permanece o mesmo de décadas atrás" (1º parágrafo), o conectivo "mas" pode ser substituído, sem prejuízo de sentido, por`,
+ options:[
+  {l:"A","t":"porque"},
+  {l:"B","t":"portanto"},
+  {l:"C","t":"contudo"},
+  {l:"D","t":"pois"},
+  {l:"E","t":"quando"},
+ ], correct:"C"},
+
+// ---------------- INGLÊS 11-20 ----------------
+{id:11, subject:"ing", text:`Read the text below to answer the question.\n\n${TEXTO_EN}\n\nThe main idea of the text is to`,
+ options:[
+  {l:"A","t":"argue that engineers are no longer necessary in rotating equipment maintenance."},
+  {l:"B","t":"explain how predictive maintenance changed the engineer's role without eliminating the need for skilled professionals."},
+  {l:"C","t":"describe the internal components of a centrifugal pump."},
+  {l:"D","t":"criticize companies that still rely on scheduled maintenance."},
+  {l:"E","t":"list the historical stages of industrial automation."},
+ ], correct:"B"},
+
+{id:12, subject:"ing", text:`In the fragment "Instead of waiting for a machine to fail, sensors continuously collect vibration, temperature and pressure data" (1st paragraph), the word "Instead" introduces an idea of`,
+ options:[
+  {l:"A","t":"addition"},
+  {l:"B","t":"time"},
+  {l:"C","t":"contrast"},
+  {l:"D","t":"cause"},
+  {l:"E","t":"condition"},
+ ], correct:"C"},
+
+{id:13, subject:"ing", text:`In the fragment "This approach does not eliminate the need for skilled engineers; rather, it changes their role" (2nd paragraph), the word "it" refers to`,
+ options:[
+  {l:"A","t":"the need"},
+  {l:"B","t":"the role"},
+  {l:"C","t":"skilled engineers"},
+  {l:"D","t":"this approach"},
+  {l:"E","t":"a machine"},
+ ], correct:"D"},
+
+{id:14, subject:"ing", text:`In the sentence "When a reading drifts away from what is expected, the system flags it long before a breakdown could stop an entire pipeline segment" (1st paragraph), the word "flags" can be replaced, with no change in meaning, by`,
+ options:[
+  {l:"A","t":"ignores"},
+  {l:"B","t":"signals"},
+  {l:"C","t":"repairs"},
+  {l:"D","t":"delays"},
+  {l:"E","t":"hides"},
+ ], correct:"B"},
+
+{id:15, subject:"ing", text:`According to the text, engineers working with predictive maintenance are now expected to`,
+ options:[
+  {l:"A","t":"replace all mechanical sensors with manual inspections."},
+  {l:"B","t":"avoid interpreting any data collected by the sensors."},
+  {l:"C","t":"interpret trends and judge whether an anomaly requires a shutdown."},
+  {l:"D","t":"stop all machines periodically, regardless of the data collected."},
+  {l:"E","t":"work exclusively with historical maintenance records."},
+ ], correct:"C"},
+
+{id:16, subject:"ing", text:`From the second paragraph, it can be inferred that companies operating large logistics networks value professionals who`,
+ options:[
+  {l:"A","t":"rely only on practical experience, without theoretical knowledge."},
+  {l:"B","t":"combine theoretical knowledge with the ability to critically read operating data."},
+  {l:"C","t":"avoid working with sensor-based systems."},
+  {l:"D","t":"focus exclusively on historical patterns, ignoring real-time data."},
+  {l:"E","t":"prefer scheduled maintenance over predictive maintenance."},
+ ], correct:"B"},
+
+{id:17, subject:"ing", text:`The word "breakdown", used in the first paragraph, is closest in meaning to`,
+ options:[
+  {l:"A","t":"upgrade"},
+  {l:"B","t":"failure"},
+  {l:"C","t":"inspection"},
+  {l:"D","t":"schedule"},
+  {l:"E","t":"discount"},
+ ], correct:"B"},
+
+{id:18, subject:"ing", text:`In "sensors continuously collect vibration, temperature and pressure data, which is then compared against historical patterns" (1st paragraph), the word "which" refers to`,
+ options:[
+  {l:"A","t":"sensors"},
+  {l:"B","t":"vibration"},
+  {l:"C","t":"data"},
+  {l:"D","t":"historical patterns"},
+  {l:"E","t":"pressure"},
+ ], correct:"C"},
+
+{id:19, subject:"ing", text:`Choose the alternative that correctly completes the sentence: "If the sensor ______ an abnormal vibration pattern, the system automatically alerts the control room."`,
+ options:[
+  {l:"A","t":"detect"},
+  {l:"B","t":"detects"},
+  {l:"C","t":"detecting"},
+  {l:"D","t":"will detect"},
+  {l:"E","t":"had detected"},
+ ], correct:"B"},
+
+{id:20, subject:"ing", text:`Considering the text as a whole, the author's purpose is best described as`,
+ options:[
+  {l:"A","t":"informative and analytical."},
+  {l:"B","t":"purely emotional and persuasive."},
+  {l:"C","t":"strictly historical."},
+  {l:"D","t":"exclusively humorous."},
+  {l:"E","t":"openly critical of engineering as a profession."},
+ ], correct:"A"},
+
+// ---------------- CONHECIMENTOS ESPECÍFICOS 21-70 ----------------
+// Fonte: CESGRANRIO - Transpetro - PSP/Terra/Nível Superior - 2023.2 - Ênfase 24: Engenharia Mecânica
+{id:21, subject:"esp", text:`Considere um ciclo teórico de Rankine, sem reaquecimento. Com o objetivo de aumentar a eficiência do ciclo, devem ser postas em prática as seguintes alterações:`,
+ options:[
+  {l:"A","t":"aumento da pressão na caldeira e redução da pressão no condensador."},
+  {l:"B","t":"uso de um compressor no lugar da bomba e uso de uma turbina com eficiência isentrópica inferior."},
+  {l:"C","t":"aumento da pressão na caldeira e uso de um compressor no lugar da bomba."},
+  {l:"D","t":"aumento da pressão da caldeira, uso de um compressor no lugar da bomba e uso de uma turbina com eficiência isentrópica inferior."},
+  {l:"E","t":"aumento da pressão na caldeira, redução da pressão no condensador e uso de uma turbina com eficiência isentrópica inferior."},
+ ], correct:"A"},
+
+{id:22, subject:"esp", text:`Considere um ciclo teórico de Rankine, sem superaquecimento. As seguintes informações foram disponibilizadas: entrada na turbina: pressão = 6 MPa, temperatura 275,4 ºC, entalpia = 2784,30 kJ/kg; saída da turbina: pressão de 20 kPa, temperatura 60,06 ºC, entalpia = 2020,12 kJ/kg; saída do condensador: pressão de 20 kPa, temperatura 60,06 ºC, entalpia = 251,38 kJ/kg; entrada na caldeira: pressão de 6 MPa, temperatura 60,06 ºC; entalpia = 257,50 kJ/kg. De posse dessas informações e sabendo-se que a potência da turbina é 7,64 MW, constata-se que o fluxo de massa, em kg/s, é igual a`,
+ options:[{l:"A",t:"5,5"},{l:"B",t:"6"},{l:"C",t:"8"},{l:"D",t:"10"},{l:"E",t:"12,5"}], correct:"D"},
+
+{id:23, subject:"esp", text:`O diâmetro da tubulação necessária para escoar cerca de 7,5 m³/s, com uma velocidade média de 2,5 m/s, deve ser determinado. O diâmetro, em metros, dessa tubulação e a natureza do escoamento (laminar ou turbulento) serão, respectivamente,\n(Dado: viscosidade cinemática da água = 0,5 x 10⁻⁶ m²/s)`,
+ options:[{l:"A",t:"0,52; laminar"},{l:"B",t:"1,14; laminar"},{l:"C",t:"1,71; turbulento"},{l:"D",t:"1,95; turbulento"},{l:"E",t:"2,52; turbulento"}], correct:"D"},
+
+{id:24, subject:"esp", text:`Comparando dois motores, um seguindo o ciclo OTTO e o outro seguindo o ciclo DIESEL, considere as afirmações abaixo.\nI - Na prática, os motores DIESEL têm eficiência térmica superior aos motores OTTO, pois se conseguem razões maiores de compressão nos primeiros que aquelas nos motores OTTO.\nII - Os motores OTTO devem ser usados quando grandes potências se fazem necessárias, pois operam em rotações mais elevadas.\nIII - Os motores DIESEL são máquinas de combustão externa, enquanto os motores OTTO são máquinas de combustão interna.\nIV - Os motores OTTO comprimem uma mistura ar + combustível, e os motores DIESEL comprimem ar tão somente.\nSão corretas APENAS as afirmações`,
+ options:[{l:"A",t:"I e III"},{l:"B",t:"I e IV"},{l:"C",t:"II e III"},{l:"D",t:"II e IV"},{l:"E",t:"I, II e III"}], correct:"B"},
+
+{id:25, subject:"esp", text:`A respeito da perda de carga em uma tubulação, considere as afirmações abaixo:\nI - A perda de carga em uma tubulação varia ao longo da vida útil da tubulação.\nII - As perdas ditas menores, isto é, em registros, acidentes, etc., são sempre menores que as perdas maiores, isto é, ao longo da tubulação.\nIII - A vazão mássica entre dois pontos ao longo do escoamento não é alterada pelas perdas internas.\nEstá correto o que se afirma em`,
+ options:[{l:"A",t:"I, apenas."},{l:"B",t:"I e II, apenas."},{l:"C",t:"I e III, apenas."},{l:"D",t:"II e III, apenas."},{l:"E",t:"I, II e III."}], correct:"A"},
+
+{id:26, subject:"esp", text:`Considere duas máquinas térmicas de Carnot. A primeira, máquina térmica A, opera entre as temperaturas T1 e T2 (T1 > T2). A segunda, máquina térmica B, opera entre as temperaturas T1 + ΔT e T2 + ΔT, onde ΔT > 0. Nesta condição, constata-se que a(s)`,
+ options:[
+  {l:"A","t":"máquina A é irreversível e a máquina B é reversível."},
+  {l:"B","t":"eficiência térmica da máquina A é sempre maior que a eficiência térmica da máquina B."},
+  {l:"C","t":"eficiência térmica da máquina A é duas vezes maior que a eficiência térmica da máquina B."},
+  {l:"D","t":"máquina A é reversível e a máquina B é irreversível."},
+  {l:"E","t":"eficiências térmicas das duas máquinas são iguais."},
+ ], correct:"B"},
+
+{id:27, subject:"esp", text:`A força de arrasto F (ML/t²) em uma esfera lisa é dependente das seguintes variáveis independentes: D(L); V(L/t); ρ(M/L³) e µ(M/Lt), considerando-se M, L e t como dimensões primárias. Após o uso da Análise Dimensional, obtém-se a seguinte relação:`,
+ options:[
+  {l:"A","t":"F / (ρV²D²) = f₅ (ρV/µ)"},
+  {l:"B","t":"F / (ρV²D²) = f₂ (µ/ρD)"},
+  {l:"C","t":"F / (ρV²D²) = f₃ (µ²/ρ)"},
+  {l:"D","t":"F / (ρV²D²) = f₄ (ρ²V²D²/µ³)"},
+  {l:"E","t":"F / (ρV²D²) = f₁ (ρVD/µ)"},
+ ], correct:"E"},
+
+{id:28, subject:"esp", text:`A gerência de uma pizzaria registrou a venda diária de pizzas napolitanas durante um ano (dentro do horário de 12h a 23h). Com os dados obtidos das vendas, ajustou-se a seguinte equação de regressão linear: Vendas = 2 x (horário do pedido) – 22. Com base nessas informações, o incremento horário no número de vendas é dado por`,
+ options:[{l:"A",t:"–22"},{l:"B",t:"22"},{l:"C",t:"2"},{l:"D",t:"–2"},{l:"E",t:"–20"}], correct:"C"},
+
+{id:29, subject:"esp", text:`Um gás perfeito experimental é utilizado em uma compressão adiabática reversível, saindo da pressão (absoluta) P1 = 100 kPa, temperatura T1 = 293 K e atingindo a pressão (absoluta) de P2 = 400 kPa. Sabendo-se que a razão entre os calores específicos (k = cp/cv) vale 2, a temperatura final, em K, é igual a`,
+ options:[{l:"A",t:"250"},{l:"B",t:"350"},{l:"C",t:"470"},{l:"D",t:"586"},{l:"E",t:"615"}], correct:"D"},
+
+{id:30, subject:"esp", text:`Em um ciclo Brayton padrão de gás, foi determinado que: trabalho no compressor: 458,90 kJ/kg; trabalho na turbina: 894,9 kJ/kg; calor liberado na câmara de combustão: não informado; calor liberado para a fonte fria: 284,2 kJ/kg. Com essas informações, constata-se que a eficiência do ciclo é igual a`,
+ options:[{l:"A",t:"35,2%"},{l:"B",t:"45,1%"},{l:"C",t:"51%"},{l:"D",t:"57,8%"},{l:"E",t:"60,5%"}], correct:"E"},
+
+{id:31, subject:"esp", text:`Deseja-se conhecer a variação de entropia em um ciclo irreversível, se comparada com a devida variação de um ciclo reversível. Nessa condição, conclui-se que a(s)`,
+ options:[
+  {l:"A","t":"variação de entropia do ciclo irreversível é sempre maior que a do ciclo reversível."},
+  {l:"B","t":"variação de entropia no ciclo irreversível será maior que a do ciclo reversível, se a substância de trabalho for água."},
+  {l:"C","t":"variação de entropia nos dois ciclos é nula, pois a entropia é uma propriedade termodinâmica."},
+  {l:"D","t":"variação de entropia no ciclo reversível será maior que a do ciclo irreversível, se a substância de trabalho for um gás perfeito."},
+  {l:"E","t":"duas variações de entropia são iguais, mas seu valor não pode ser determinado sem o conhecimento dos estados termodinâmicos."},
+ ], correct:"C"},
+
+{id:32, subject:"esp", text:`Ao iniciar uma viagem, o carro tinha 0,2 kg de ar (suposto gás perfeito) em cada pneu, à temperatura de 27ºC e pressão manométrica de 450 kPa. Ao final da viagem, a temperatura atingiu 57ºC. Despreze as variações de volume do pneu. Admita: as propriedades termodinâmicas da substância não foram alteradas durante a viagem; Rar = 0,3 kN·m/kg·K; Patm = 100 kPa. Ao final da viagem, a pressão manométrica do ar no pneu, em kPa, e o volume do pneu, em m³, serão, respectivamente, iguais a`,
+ options:[{l:"A",t:"505 e 0,0327"},{l:"B",t:"605 e 0,0327"},{l:"C",t:"707 e 0,0205"},{l:"D",t:"453 e 0,0205"},{l:"E",t:"325 e 0,0402"}], correct:"A"},
+
+{id:33, subject:"esp", text:`Duas placas planas justapostas, de mesma espessura, separam dois ambientes, ambos evacuados. As temperaturas das faces esquerda e direita do conjunto das duas placas são mantidas a TQ e TF. Sejam kE e kD as condutividades térmicas das placas da esquerda e da direita, respectivamente. Suponha o regime permanente, e que L seja a espessura de cada placa. Nessas condições, verifica-se o seguinte:`,
+ options:[
+  {l:"A","t":"se kE = kD, a temperatura TM da interface das duas placas será mais próxima de TQ."},
+  {l:"B","t":"se kE < kD, o calor trocado aumentará."},
+  {l:"C","t":"se kE > kD, o calor trocado aumentará."},
+  {l:"D","t":"se kE = kD, a temperatura TM da interface das duas placas será mais próxima de TF."},
+  {l:"E","t":"se kE = kD, a temperatura TM da interface das duas placas será dada por (TQ + TF)/2."},
+ ], correct:"E"},
+
+{id:34, subject:"esp", text:`A temperatura da carcaça de um trocador de calor indica perda de calor para o ambiente. Sabe-se que: corrente quente — capacidade térmica = 2 kJ/K.s, temperatura de entrada no trocador: 95ºC, temperatura de saída no trocador: 45ºC; corrente fria — capacidade térmica = 3 kJ/K.s, temperatura de entrada no trocador: 25ºC, temperatura de saída no trocador: 55ºC. Com essas informações, a quantidade de calor perdida para o ambiente, em kW, é igual a`,
+ options:[{l:"A",t:"0"},{l:"B",t:"10"},{l:"C",t:"20"},{l:"D",t:"30"},{l:"E",t:"40"}], correct:"B"},
+
+{id:35, subject:"esp", text:`A cambota é um dos principais componentes de um motor de quatro tempos, seja ele por ignição por centelha ou por compressão, e faz parte do sistema de transmissão do movimento desse motor. Uma outra denominação para cambota é`,
+ options:[{l:"A",t:"biela"},{l:"B",t:"cilindro"},{l:"C",t:"pistão"},{l:"D",t:"volante de inércia"},{l:"E",t:"árvore de manivelas"}], correct:"E"},
+
+{id:36, subject:"esp", text:`Um sistema com um grau de liberdade, equivalente a um motor posicionado no centro do vão de uma viga biapoiada, possui massa m e rigidez keq, onde m é a massa do motor, e keq é a rigidez equivalente da viga na posição do motor. Considerando-se que a seção transversal retangular da viga tem dimensões de 10 cm por 20 cm, e seu comprimento é de 1,0 m, o valor da frequência natural do sistema`,
+ options:[
+  {l:"A","t":"será maior quando a base da área da seção retangular for de 20 cm."},
+  {l:"B","t":"será maior quando a base da área da seção retangular for de 10 cm."},
+  {l:"C","t":"não depende do posicionamento da seção transversal."},
+  {l:"D","t":"não depende das dimensões da seção transversal."},
+  {l:"E","t":"não depende do comprimento L da viga."},
+ ], correct:"B"},
+
+{id:37, subject:"esp", text:`Em um determinado instante da operação de uma máquina, a barra AB de um mecanismo fica sujeita às forças FA e FB. Considerando-se que a massa da barra é 6 kg e seu momento de inércia em relação ao CM é 0,02 kg.m², a aceleração do CM, expressa em m/s², e a aceleração angular da barra, expressa em rad/s², são, respectivamente,`,
+ options:[{l:"A",t:"10 e 50"},{l:"B",t:"20 e 80"},{l:"C",t:"20 e 100"},{l:"D",t:"50 e 150"},{l:"E",t:"50 e 200"}], correct:"E"},
+
+{id:38, subject:"esp", text:`Considere um modelo plano da dinâmica vertical de um veículo de passeio, com quatro graus de liberdade: deslocamento vertical do CM do veículo; deslocamento angular em torno do CM e os deslocamentos de duas rodas. As quatro frequências naturais de vibração estão relacionadas a`,
+ options:[
+  {l:"A","t":"um dos graus de liberdade do sistema"},
+  {l:"B","t":"todos os graus de liberdade do sistema"},
+  {l:"C","t":"um dos elementos elásticos considerados"},
+  {l:"D","t":"um dos elementos dissipativos considerados"},
+  {l:"E","t":"um dos elementos armazenadores de energia do sistema"},
+ ], correct:"B"},
+
+{id:39, subject:"esp", text:`Uma viga está apoiada em uma de suas extremidades e engastada na outra, e está suportando uma carga concentrada F no centro de seu vão. As reações de apoio atuantes nas extremidades dessa viga são obtidas utilizando-se as`,
+ options:[
+  {l:"A","t":"condições de equilíbrio, apenas"},
+  {l:"B","t":"condições de equilíbrio e a Lei de Hooke"},
+  {l:"C","t":"condições de equilíbrio e uma equação da resistência dos materiais envolvendo a linha elástica"},
+  {l:"D","t":"condições de equilíbrio e uma equação relacionada à geometria da seção transversal da viga"},
+  {l:"E","t":"condições de equilíbrio e as informações sobre a resistência do material da viga"},
+ ], correct:"C"},
+
+{id:40, subject:"esp", text:`A viga biapoiada ABC deve suportar os efeitos da carga F atuante no ponto D. Os esforços internos atuantes no trecho BC da viga são de`,
+ options:[
+  {l:"A","t":"flexão, apenas"},{l:"B","t":"carga axial de tração, apenas"},{l:"C","t":"carga axial de compressão, apenas"},
+  {l:"D","t":"flexão combinada com carga axial de tração"},{l:"E","t":"flexão combinada com carga axial de compressão"},
+ ], correct:"D"},
+
+{id:41, subject:"esp", text:`Um engenheiro deseja estimar a frequência natural de um veículo de passeio, modelado como sistema de um grau de liberdade. Para isso, ele considerou uma massa de 1.000 kg e uma rigidez equivalente às suspensões do veículo com valor de 100 kN/m. Diante do exposto acima, a frequência natural, expressa em Hz, está na faixa entre`,
+ options:[{l:"A",t:"1 e 2"},{l:"B",t:"2 e 4"},{l:"C",t:"4 e 15"},{l:"D",t:"15 e 80"},{l:"E",t:"80 e 100"}], correct:"A"},
+
+{id:42, subject:"esp", text:`O eixo 1 da transmissão de movimento realizada por um par de engrenagens cônicas gira a 1.800 rpm para acionar o eixo 2 que demanda um torque de 120 N.m. Considerando-se que o pinhão possui 30 dentes, e a coroa, 60 dentes, a potência mínima necessária ao motor, expressa em watts, é de`,
+ options:[{l:"A",t:"1.200"},{l:"B",t:"3.600"},{l:"C",t:"1.200π"},{l:"D",t:"3.600π"},{l:"E",t:"4.800π"}], correct:"D"},
+
+{id:43, subject:"esp", text:`Uma transmissão de movimento entre eixos paralelos é realizada por meio de um par de engrenagens helicoidais que transmitem aos eixos uma força normal Nx, um torque Tx e um momento fletor Mz. Diante desse cenário, esses esforços produzem, no cubo representativo do ponto P da seção transversal, tensões normais e cisalhantes, tais que`,
+ options:[{l:"A",t:"σx > 0 e τxz = 0"},{l:"B",t:"σy = 0 e τxz = 0"},{l:"C",t:"σz ≠ 0 e τxz ≠ 0"},{l:"D",t:"σx < 0 e τxz ≠ 0"},{l:"E",t:"σx < 0 e τxz = 0"}], correct:"D"},
+
+{id:44, subject:"esp", text:`Um veículo cuja massa é de 1.000 kg deve manter-se em uma trajetória circular de 40 m de raio a uma velocidade constante de 36 km/h. Nessa condição, o valor da força de atrito atuante nos pneus, expresso em N, é de`,
+ options:[
+  {l:"A","t":"2.500 na direção tangente à trajetória"},{l:"B","t":"2.500 na direção perpendicular à trajetória"},
+  {l:"C","t":"5.000 na direção perpendicular à trajetória"},{l:"D","t":"10.000 na direção tangente à trajetória"},
+  {l:"E","t":"10.000 na direção perpendicular à trajetória"},
+ ], correct:"B"},
+
+{id:45, subject:"esp", text:`A seção transversal de um eixo oco está submetida à ação de um momento fletor My e de um torque Tx. Considerando-se o sistema de referência xyz, a tensão normal σx atuante no ponto A e a tensão cisalhante τxy atuante no ponto B da seção são, respectivamente,`,
+ options:[{l:"A",t:"positiva e nula"},{l:"B",t:"negativa e nula"},{l:"C",t:"positiva e diferente de zero"},{l:"D",t:"negativa e diferente de zero"},{l:"E",t:"nula e diferente de zero"}], correct:"A"},
+
+{id:46, subject:"esp", text:`Em um projeto, a determinação das dimensões da seção transversal de uma viga utiliza a expressão da tensão normal de flexão σ = Mc/I, na qual M é o momento fletor máximo, c é a distância entre a linha neutra e a fibra mais afastada da linha neutra, e I é o momento de inércia da seção. Essa tensão é comparada à tensão admissível do projeto, e o módulo de resistência à flexão necessário (W = I/c) é determinado. Considerando-se que a seção transversal seja retangular, de base b e altura h, esse módulo será expresso por`,
+ options:[{l:"A",t:"bh/6"},{l:"B",t:"bh/12"},{l:"C",t:"bh²/6"},{l:"D",t:"bh³/6"},{l:"E",t:"bh³/12"}], correct:"C"},
+
+{id:47, subject:"esp", text:`Para diminuir a vibração de um motor com massa de 40 kg (peso de 400 N), foi sugerido apoiá-lo sobre um isolante de borracha. Por meio de um teste estático, o motor apresentou um deslocamento de 2,5 cm relativamente à condição indeformada do isolante. Diante do exposto, o sistema massa-mola representativo do motor instalado sobre o isolante de borracha possui uma frequência natural, expressa em Hz, de`,
+ options:[{l:"A",t:"20"},{l:"B",t:"10"},{l:"C",t:"20/π"},{l:"D",t:"10/π"},{l:"E",t:"20π"}], correct:"D"},
+
+{id:48, subject:"esp", text:`O modelo de um sistema de elevação de carga considera um tambor com momento de inércia I, um cabo flexível com rigidez k e a carga com massa m. Esse sistema com dois graus de liberdade (x e θ) apresenta uma frequência natural nula porque`,
+ options:[
+  {l:"A","t":"a rigidez do cabo é muito alta."},{l:"B","t":"o sistema não está em equilíbrio dinâmico."},
+  {l:"C","t":"um dos corpos possui movimento de rotação."},{l:"D","t":"um dos corpos possui movimento de translação."},
+  {l:"E","t":"há uma condição de movimento para a qual o cabo não se deforma."},
+ ], correct:"E"},
+
+{id:49, subject:"esp", text:`O acionamento de abertura de uma porta é constituído de uma estrutura em que pode ser identificado um trecho AB perpendicular a um trecho BC, ambos de seção transversal circular com diâmetro constante. Considerando-se o sistema de referência xyz, verifica-se que no ponto P da seção transversal no engaste são nulas as tensões`,
+ options:[{l:"A",t:"σx, τxy e τyz"},{l:"B",t:"σx, τyz e σz"},{l:"C",t:"σy, τxy e τxz"},{l:"D",t:"σz, τxy e τxz"},{l:"E",t:"σy, σz e τyz"}], correct:"E"},
+
+{id:50, subject:"esp", text:`A gasolina deve ser capaz de ser submetida às altas pressões e às temperaturas do processo de combustão, sem que a mistura, ainda não queimada, venha a explodir por si só, que é um processo que se deseja evitar. A propriedade que define essa capacidade da gasolina é denominada`,
+ options:[{l:"A",t:"knock"},{l:"B",t:"cracking"},{l:"C",t:"índice de cetano"},{l:"D",t:"índice de octano"},{l:"E",t:"velocidade de propagação de chama"}], correct:"D"},
+
+{id:51, subject:"esp", text:`A classificação SAE para lubrificantes é a mais conhecida, sendo especificada conforme a condição de operação e as características do motor. Nesse contexto, considere um óleo multigrade que mantenha as características de um óleo SAE 10 à baixa temperatura (-20ºC) e de um óleo SAE 40 à 100ºC. Qual é a classificação SAE desse óleo?`,
+ options:[{l:"A",t:"SAE 10"},{l:"B",t:"SAE 40"},{l:"C",t:"SAE 40 W 10"},{l:"D",t:"SAE 40 W 100"},{l:"E",t:"SAE 10 W 40"}], correct:"E"},
+
+{id:52, subject:"esp", text:`De forma geral, os motores de combustão interna aproveitam o aumento de pressão resultante da combustão da mistura ar-combustível para gerar movimento, sendo a cilindrada e a taxa de compressão características importantes desses motores. Considere um motor de quatro cilindros, no qual cada cilindro tem diâmetro D e curso C. Qual é a expressão que determina a cilindrada desse motor?`,
+ options:[{l:"A",t:"π.C.D²/4"},{l:"B",t:"π.C.D²/2"},{l:"C",t:"π.C.D²"},{l:"D",t:"2.π.C.D²"},{l:"E",t:"4.π.C.D²"}], correct:"C"},
+
+{id:53, subject:"esp", text:`Um sistema de bombeamento possui os valores de potências motriz, de elevação e útil iguais a 10 kgf.m/s, 9,5 kgf.m/s e 7,5 kgf.m/s, respectivamente. Qual é o valor do rendimento mecânico para esse sistema?`,
+ options:[{l:"A",t:"0,20"},{l:"B",t:"0,25"},{l:"C",t:"0,75"},{l:"D",t:"0,79"},{l:"E",t:"0,95"}], correct:"E"},
+
+{id:54, subject:"esp", text:`Um engenheiro mecânico, ao analisar as propriedades mecânicas do metal depositado em uma solda a arco submerso (SAW), identificou que essa solda apresentava 430 MPa de limite de resistência e 330 MPa de limite de escoamento mínimo (0,2%). Com base na informação acima, qual é a designação utilizada como base para classificar o material empregado nessa solda?`,
+ options:[{l:"A",t:"F33XX - EXXX"},{l:"B",t:"F43XX - EXXX"},{l:"C",t:"F3343 - EXXX"},{l:"D",t:"F4333 - EXXX"},{l:"E",t:"F4X3X - EXXX"}], correct:"B"},
+
+{id:55, subject:"esp", text:`A American Welding Society (AWS) possui especificações aplicáveis aos consumíveis para soldagem a arco submerso (SAW). Com base nisso, considere que se deseja especificar os consumíveis para soldagem SAW de aço inoxidável. Para tal finalidade, deve-se empregar a seguinte especificação:`,
+ options:[{l:"A",t:"AWS A 5.9"},{l:"B",t:"AWS A 5.14"},{l:"C",t:"AWS A 5.17"},{l:"D",t:"AWS A 5.21"},{l:"E",t:"AWS A 5.23"}], correct:"A"},
+
+{id:56, subject:"esp", text:`Uma bomba cujo rotor apresenta entrada bilateral é utilizada para bombear 0,18 m³/s para 381 m de altura, operando a 600 rpm. Qual o valor, em rpm, do número específico de rotações dessa unidade de bombeamento?`,
+ options:[{l:"A",t:"219"},{l:"B",t:"310"},{l:"C",t:"391"},{l:"D",t:"472"},{l:"E",t:"553"}], correct:"A"},
+
+{id:57, subject:"esp", text:`Em um ciclo de Rankine com rendimento de 40%, o trabalho líquido é de 1.100 kJ/kg, enquanto o trabalho na bomba é de 50 kJ/kg. Sabendo-se que 2.750 kJ/kg de calor são trocados na caldeira, qual é o valor, em kJ/kg, do trabalho na turbina?`,
+ options:[{l:"A",t:"1.600"},{l:"B",t:"1.200"},{l:"C",t:"1.150"},{l:"D",t:"1.100"},{l:"E",t:"1.050"}], correct:"C"},
+
+{id:58, subject:"esp", text:`Em uma turbina de contrapressão, o vapor de escape`,
+ options:[
+  {l:"A","t":"vai para um condensador."},
+  {l:"B","t":"sai diretamente para a atmosfera."},
+  {l:"C","t":"é conduzido para um evaporador."},
+  {l:"D","t":"é conduzido para dispositivos especiais, onde será utilizado futuramente, sendo a sua pressão sensivelmente superior à atmosférica."},
+  {l:"E","t":"passa por um condensador, onde é liquefeito e, depois, bombeado para um evaporador."},
+ ], correct:"D"},
+
+{id:59, subject:"esp", text:`Considere um motor cujos volumes nos pontos morto inferior e morto superior sejam, respectivamente, 100 cm³ e 10 cm³. Qual é a taxa de compressão desse motor?`,
+ options:[{l:"A",t:"100:1"},{l:"B",t:"10:1"},{l:"C",t:"9:1"},{l:"D",t:"1:10"},{l:"E",t:"1:100"}], correct:"B"},
+
+{id:60, subject:"esp", text:`Em um experimento para medir o momento de inércia em torno do centro de massa, uma biela é posta para oscilar, sem atrito, e fica suspensa em um eixo que passa pelo furo de centro O2. A massa da biela é igual a 500 g, e as distâncias L1 e L2 medem, respectivamente, 50 mm e 100 mm. O período de oscilação da biela, quando deslocada de um pequeno ângulo θ menor do que 5°, registrado em um cronômetro, foi igual a 0,4π segundos. Considere g = 10 m/s² e que a relação entre o momento de inércia medido ao longo do eixo que passa pelo centro O2 e a frequência natural da biela é dada por J_O2 = (mg)L2 / ωn². O valor do momento de inércia em torno do eixo transversal z que passa pelo centro de massa dessa biela, em kg.m², é igual a`,
+ options:[{l:"A",t:"5,0 × 10⁻³"},{l:"B",t:"10,0 × 10⁻³"},{l:"C",t:"15,0 × 10⁻³"},{l:"D",t:"20,0 × 10⁻³"},{l:"E",t:"25,0 × 10⁻³"}], correct:"C"},
+
+{id:61, subject:"esp", text:`A corrosão eletroquímica é uma das principais causas para falhas de materiais em serviço. Ela sempre pode ocorrer para determinadas geometrias em que dois materiais são colocados em contato íntimo um com o outro. É favorável a uma corrosão eletroquímica o seguinte sistema de materiais:`,
+ options:[{l:"A",t:"cobre e policloreto de vinila"},{l:"B",t:"cobre e óxido de silício"},{l:"C",t:"cobre e ferro"},{l:"D",t:"óxido de silício e policloreto de vinila"},{l:"E",t:"óxido de silício e ferro"}], correct:"C"},
+
+{id:62, subject:"esp", text:`É representado um sistema de três graus de liberdade sem amortecimento, onde cada uma das massas pode se deslocar, sem atrito, somente ao longo do eixo X. As frequências naturais desse sistema são f1 = 0,2 Hz, f2 = 0,6 Hz e f3 = 1,2 Hz. São feitos três experimentos em que as massas são simultaneamente deslocadas de suas correspondentes posições de equilíbrio e depois são liberadas para oscilarem. Considerando-se as informações apresentadas (dadas na figura original da prova), verifica-se que as massas oscilam na frequência natural f1 APENAS no(s) experimento(s)`,
+ options:[{l:"A",t:"1"},{l:"B",t:"3"},{l:"C",t:"1 e 2"},{l:"D",t:"1 e 3"},{l:"E",t:"2 e 3"}], correct:"E"},
+
+{id:63, subject:"esp", text:`No ciclo ideal de Diesel, mostrado no gráfico pressão × volume, o processo que vai do ponto 2 ao ponto 3 é conhecido como fornecimento de calor à pressão constante. Em um motor real, o fenômeno físico que ocorre ao longo desse processo e o nome atribuído à relação V3/V2 são, respectivamente,`,
+ options:[
+  {l:"A","t":"compressão e rendimento volumétrico"},{l:"B","t":"compressão e rendimento térmico"},
+  {l:"C","t":"combustão e razão de compressão"},{l:"D","t":"combustão e rendimento mecânico"},{l:"E","t":"combustão e razão de corte"},
+ ], correct:"E"},
+
+{id:64, subject:"esp", text:`Um motor alternativo do ciclo Otto, com relação diâmetro × curso do cilindro igual a 98,4 mm × 89,7 mm, é modificado, e sua taxa de compressão original de 8:1 sofre um aumento de 25%. A razão entre os volumes da câmara de combustão antes e depois de tal modificação é`,
+ options:[{l:"A",t:"6/5"},{l:"B",t:"11/9"},{l:"C",t:"5/4"},{l:"D",t:"9/7"},{l:"E",t:"15/11"}], correct:"D"},
+
+{id:65, subject:"esp", text:`Um engenheiro precisa especificar um material para uma mola, e, para isso, deve definir características da curva de tensão de tração versus deformação de engenharia para satisfazer as condições de trabalho. Nesse caso, ele deve definir a seguinte(s) característica(s):`,
+ options:[
+  {l:"A","t":"módulo de Young, apenas"},{l:"B","t":"limite de escoamento, apenas"},{l:"C","t":"limite de resistência mecânica, apenas"},
+  {l:"D","t":"módulo de Young e limite de escoamento"},{l:"E","t":"módulo de Young e limite de resistência mecânica"},
+ ], correct:"D"},
+
+{id:66, subject:"esp", text:`Um aço eutetoide, ligado com manganês e níquel para melhorar sua temperabilidade, é austenitizado numa temperatura acima do eutetoide e resfriado rapidamente até a temperatura ambiente por imersão num banho de água fria, processo conhecido como têmpera. O principal constituinte observado na microestrutura desse aço após esse tratamento térmico é a`,
+ options:[{l:"A",t:"austenita"},{l:"B",t:"cementita"},{l:"C",t:"ferrita"},{l:"D",t:"perlita"},{l:"E",t:"martensita"}], correct:"E"},
+
+{id:67, subject:"esp", text:`Um engenheiro precisa construir um forno elétrico para trabalhar na faixa de temperatura de 25°C até 1200°C sob atmosfera oxidante. O material interno do forno servirá de barreira isolante térmica e de isolante elétrico. Nesse caso, o material mais adequado para a parte interna do forno é a(o)`,
+ options:[{l:"A",t:"alumina alfa (Al₂O₃)"},{l:"B",t:"carbono grafítico"},{l:"C",t:"carbeto (carboneto) de tungstênio (WC)"},{l:"D",t:"nióbio (Nb)"},{l:"E",t:"teflon (politetrafluoretileno, PTFE)"}], correct:"A"},
+
+{id:68, subject:"esp", text:`Considere a tabela de potenciais de redução e preço de alguns metais puros:\nZn²⁺ + 2e⁻ = Zn: –0,763 V, R$217,00/kg | Cr²⁺ + 2e⁻ = Cr: –0,744 V, R$300,00/kg | Fe²⁺ + 2e⁻ = Fe: –0,440 V, R$65,00/kg | Sn²⁺ + 2e⁻ = Sn: –0,136 V, R$117,00/kg | Cu²⁺ + 2e⁻ = Cu: +0,337 V, R$37,00/kg.\nConsiderando-se os dados da tabela, o material que, na forma de eletrodo de sacrifício, é melhor para proteção de uma chapa de aço é`,
+ options:[{l:"A",t:"Cr"},{l:"B",t:"Cu"},{l:"C",t:"Fe"},{l:"D",t:"Sn"},{l:"E",t:"Zn"}], correct:"E"},
+
+{id:69, subject:"esp", text:`A soldagem pelo método TIG pode ser empregada com diferentes configurações de corrente elétrica, utilizando argônio como gás inerte. Em todas as configurações, o gás argônio é ionizado com carga positiva e, por isso, sofre uma aceleração que resulta em elevada energia cinética. Sobre o efeito que esse íon argônio apresenta sobre a superfície do metal soldado, tem-se que, com corrente`,
+ options:[
+  {l:"A","t":"contínua e eletrodo de tungstênio polarizado positivo, o íon argônio é acelerado contra o eletrodo e, portanto, melhora a limpeza da peça soldada."},
+  {l:"B","t":"contínua e eletrodo de tungstênio polarizado positivo, o íon de argônio é acelerado contra o metal de solda e, portanto, melhora a limpeza da peça soldada."},
+  {l:"C","t":"contínua e eletrodo de tungstênio polarizado negativo, o íon argônio é acelerado contra o metal de solda e, portanto, melhora a limpeza da peça soldada."},
+  {l:"D","t":"contínua e eletrodo de tungstênio polarizado negativo, o íon de argônio é acelerado contra o eletrodo e, portanto, melhora a limpeza da peça soldada."},
+  {l:"E","t":"alternada, o íon de argônio não sofre nenhuma aceleração e, portanto, não melhora a limpeza da peça soldada."},
+ ], correct:"B"},
+
+{id:70, subject:"esp", text:`Um sistema binário A-B apresenta um líquido que se solidifica de forma eutética com uma fração molar de B igual a 0,5. A fase rica em B não apresenta solubilidade para o componente A. A fase rica em A apresenta uma solubilidade máxima de 0,2 de B na temperatura do eutético. Uma liga contendo 35% molar de B foi preparada pela mistura de proporções adequadas de A e B no estado líquido. Essa liga foi resfriada lentamente buscando alcançar a solidificação de equilíbrio. Qual a fase do primeiro constituinte precipitado e qual a sua quantidade, respectivamente?`,
+ options:[{l:"A",t:"Fase rica em A, 50%"},{l:"B",t:"Fase rica em A, 81,25%"},{l:"C",t:"B puro, 35%"},{l:"D",t:"B puro, 81,25%"},{l:"E",t:"eutético"}], correct:"A"},
+];
+
+/* =========================================================
+   STATE & LOGIC
+========================================================= */
+const TOTAL = questions.length; // 70
+let answers = new Array(TOTAL).fill(null); // stores letter or null
+let current = 0;
+let finished = false;
+let timeLeft = 4*3600 + 30*60; // 4h30 in seconds
+let timerInterval = null;
+
+const subjectMeta = {
+  port: {label:"Língua Portuguesa", cls:"tag-port"},
+  ing:  {label:"Língua Inglesa", cls:"tag-ing"},
+  esp:  {label:"Conhecimentos Específicos", cls:"tag-esp"},
+};
+
+const gridNav = document.getElementById('gridNav');
+const qtextEl = document.getElementById('qtext');
+const optionsEl = document.getElementById('options');
+const qnumLabel = document.getElementById('qnumLabel');
+const subjectTag = document.getElementById('subjectTag');
+const progressPill = document.getElementById('progressPill');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const submitBtn = document.getElementById('submitBtn');
+const timerEl = document.getElementById('timer');
+const mainView = document.getElementById('mainView');
+const railView = document.getElementById('railView');
+const resultsView = document.getElementById('resultsView');
+const modalBg = document.getElementById('modalBg');
+const modalText = document.getElementById('modalText');
+
+function buildGrid(){
+  gridNav.innerHTML = '';
+  let lastSubject = null;
+  questions.forEach((q, idx) => {
+    if(lastSubject !== null && lastSubject !== q.subject){
+      const div = document.createElement('div');
+      div.className = 'section-divider';
+      gridNav.appendChild(div);
+    }
+    lastSubject = q.subject;
+    const btn = document.createElement('button');
+    btn.className = 'qbtn';
+    btn.textContent = q.id;
+    btn.setAttribute('aria-label', `Ir para questão ${q.id}`);
+    btn.addEventListener('click', () => { current = idx; render(); });
+    gridNav.appendChild(btn);
+  });
+}
+
+function refreshGridStates(){
+  const btns = gridNav.querySelectorAll('.qbtn');
+  btns.forEach((btn, i) => {
+    btn.classList.toggle('answered', answers[i] !== null);
+    btn.classList.toggle('current', i === current);
+  });
+}
+
+function render(){
+  const q = questions[current];
+  const meta = subjectMeta[q.subject];
+  subjectTag.textContent = meta.label;
+  subjectTag.className = 'subject-tag ' + meta.cls;
+  qnumLabel.textContent = `Questão ${q.id}`;
+  qtextEl.textContent = q.text;
+
+  optionsEl.innerHTML = '';
+  q.options.forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'opt' + (answers[current] === opt.l ? ' selected' : '');
+    div.setAttribute('role','radio');
+    div.setAttribute('tabindex','0');
+    div.setAttribute('aria-checked', answers[current] === opt.l ? 'true':'false');
+    div.innerHTML = `<span class="letter">${opt.l}</span><span class="opttext"></span>`;
+    div.querySelector('.opttext').textContent = opt.t;
+    div.addEventListener('click', () => selectAnswer(opt.l));
+    div.addEventListener('keydown', (e) => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); selectAnswer(opt.l); }});
+    optionsEl.appendChild(div);
+  });
+
+  prevBtn.disabled = current === 0;
+  nextBtn.textContent = current === TOTAL - 1 ? 'Concluir revisão' : 'Próxima →';
+
+  updateProgress();
+  refreshGridStates();
+}
+
+function selectAnswer(letter){
+  answers[current] = letter;
+  render();
+}
+
+function updateProgress(){
+  const answered = answers.filter(a => a !== null).length;
+  progressPill.innerHTML = `<b>${answered}</b>/70 respondidas`;
+}
+
+prevBtn.addEventListener('click', () => { if(current > 0){ current--; render(); }});
+nextBtn.addEventListener('click', () => {
+  if(current < TOTAL - 1){ current++; render(); }
+  else { openModal(); }
+});
+
+/* ---------- TIMER ---------- */
+function formatTime(s){
+  const h = Math.floor(s/3600).toString().padStart(2,'0');
+  const m = Math.floor((s%3600)/60).toString().padStart(2,'0');
+  const sec = Math.floor(s%60).toString().padStart(2,'0');
+  return `${h}:${m}:${sec}`;
+}
+function tick(){
+  if(finished) return;
+  timeLeft--;
+  if(timeLeft <= 0){
+    timeLeft = 0;
+    timerEl.textContent = "00:00:00";
+    clearInterval(timerInterval);
+    finishExam();
+    return;
+  }
+  timerEl.textContent = formatTime(timeLeft);
+  timerEl.classList.toggle('warn', timeLeft <= 600 && timeLeft > 120);
+  timerEl.classList.toggle('crit', timeLeft <= 120);
+}
+function startTimer(){
+  timerEl.textContent = formatTime(timeLeft);
+  timerInterval = setInterval(tick, 1000);
+}
+
+/* ---------- MODAL / FINISH ---------- */
+function openModal(){
+  const answered = answers.filter(a => a !== null).length;
+  if(answered < TOTAL){
+    modalText.textContent = `Você respondeu ${answered} de 70 questões. Deseja finalizar mesmo assim? As questões em branco contarão como erradas.`;
+  } else {
+    modalText.textContent = "Você respondeu todas as 70 questões. Deseja finalizar o simulado e ver o resultado?";
+  }
+  modalBg.classList.add('show');
+}
+document.getElementById('modalCancel').addEventListener('click', () => modalBg.classList.remove('show'));
+document.getElementById('modalConfirm').addEventListener('click', () => { modalBg.classList.remove('show'); finishExam(); });
+submitBtn.addEventListener('click', openModal);
+
+function finishExam(){
+  finished = true;
+  clearInterval(timerInterval);
+  mainView.style.display = 'none';
+  railView.style.display = 'none';
+  resultsView.style.display = 'block';
+  computeResults();
+}
+
+function computeResults(){
+  let correctCount = 0;
+  const bySubject = { port:{correct:0,total:0}, ing:{correct:0,total:0}, esp:{correct:0,total:0} };
+
+  questions.forEach((q, i) => {
+    bySubject[q.subject].total++;
+    if(answers[i] === q.correct){
+      correctCount++;
+      bySubject[q.subject].correct++;
+    }
+  });
+
+  document.getElementById('scoreNum').textContent = correctCount;
+  document.getElementById('scoreDen').textContent = '/70';
+  const pct = Math.round((correctCount/TOTAL)*100);
+  document.getElementById('scoreTitle').textContent =
+    pct >= 70 ? "Bom desempenho — siga treinando os pontos fracos" :
+    pct >= 50 ? "Desempenho mediano — reforce os temas abaixo" :
+    "Vale revisar os fundamentos com calma";
+  document.getElementById('scoreSub').textContent =
+    `Você acertou ${correctCount} de 70 questões (${pct}%). Confira o detalhamento por bloco e a revisão completa abaixo.`;
+
+  const breakdownArea = document.getElementById('breakdownArea');
+  breakdownArea.innerHTML = '';
+  const labels = {port:"Português", ing:"Inglês", esp:"Conhec. Específicos"};
+  Object.keys(bySubject).forEach(key => {
+    const d = bySubject[key];
+    const p = d.total ? Math.round((d.correct/d.total)*100) : 0;
+    const card = document.createElement('div');
+    card.className = 'bd-card';
+    card.innerHTML = `
+      <div class="bd-title">${labels[key]}</div>
+      <div class="bd-val">${d.correct}/${d.total}</div>
+      <div class="bd-bar"><div style="width:${p}%"></div></div>
+    `;
+    breakdownArea.appendChild(card);
+  });
+
+  const reviewList = document.getElementById('reviewList');
+  reviewList.innerHTML = '';
+  questions.forEach((q, i) => {
+    const given = answers[i];
+    const status = given === null ? 'blank' : (given === q.correct ? 'ok' : 'bad');
+    const statusLabel = status === 'blank' ? 'Em branco' : (status === 'ok' ? 'Correta' : 'Incorreta');
+    const item = document.createElement('div');
+    item.className = 'review-item';
+    item.innerHTML = `
+      <div class="row1">
+        <span class="idx">Q${q.id}</span>
+        <span>${subjectMeta[q.subject].label}</span>
+        <span class="status ${status}">${statusLabel}</span>
+      </div>
+      <div class="review-detail">
+        <div><b>Sua resposta:</b> ${given ? given : '— (em branco)'}</div>
+        <div><b>Gabarito oficial:</b> ${q.correct}</div>
+      </div>
+    `;
+    item.addEventListener('click', () => item.classList.toggle('open'));
+    reviewList.appendChild(item);
+  });
+}
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  answers = new Array(TOTAL).fill(null);
+  current = 0;
+  finished = false;
+  timeLeft = 4*3600 + 30*60;
+  resultsView.style.display = 'none';
+  mainView.style.display = 'block';
+  railView.style.display = 'block';
+  timerEl.classList.remove('warn','crit');
+  render();
+  startTimer();
+});
+
+/* ---------- INIT ---------- */
+buildGrid();
+render();
+startTimer();
+</script>
+</body>
+</html>
